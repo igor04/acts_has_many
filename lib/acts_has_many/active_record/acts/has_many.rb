@@ -6,31 +6,37 @@ module ActiveRecord
       end
 
       #
-      # acts_has_many - class methods
-      # added:
-      # new class method has_many_through_update;
-      # instance methods: depend_relations, model, compare, has_many_update, actuale?;
-      # set before_destroy callback;
+      # class methods +acts_has_many+ added:
+      #
+      # class method:
+      #   +has_many_through_update+
+      #
+      # instance methods:
+      #   +depend_relations+
+      #   +model+
+      #   +compare+
+      #   +has_many_update+
+      #   +actuale?+
+      #
+      # set +before_destroy+ callback;
       #      
       
       module ClassMethods
         
         #
-        # acts_has_many - available method in all model and switch on 
-        # extension functional in concrete model (need located this method
-        # after all relation or after relation which include in dependence)
+        # +acts_has_many+ - available method in all model and switch on 
+        #   extension functional in concrete model (need located this method
+        #   after all relation or after relation which include in dependence)
         # options
-        # :compare(type: str)- name column for compare with other element in table
-        # :relations(type: array) - concrete name of depended relation
-        # :through - off or on has_many_through_update method
+        #   :compare( symbol, string)- name column for compare with other element in table
+        #   :relations( array) - concrete name of depended relation
+        #   :through( boolean) - off or on has_many_through_update method
         #
         
         def acts_has_many(options = {})
           depend_relations = []
-          options_default = {
-            :compare => 'title',
-            :through => false
-          } 
+          options_default = { compare: :title, through: false }
+
           options = options_default.merge options
               
           options[:relations] = self.reflections
@@ -41,12 +47,15 @@ module ActiveRecord
             depend_relations << relation.to_s.tableize
           end
             
-          # has_many_through_update - return(type: array) [ 1 - array objects records, 2 - array delete ids ] 
+          #
+          # +has_many_through_update+ (return array) [ 1 - array objects records, 2 - array delete ids ] 
           # options 
-          # :update(type: array) - data for update (id and data)
-          # :new(type: array) - data for create record (data)
-          # !!! for delete need use method destroy !!!
-          
+          #   :update( array) - data for update (id and data)
+          #   :new( array) - data for create record (data)
+          #
+          # +for delete need use method destroy !!!+
+          #
+
           has_many_through = ''
           if(options[:through])
             has_many_through = """
@@ -66,8 +75,10 @@ module ActiveRecord
                 unless options[:new].nil?
                   options[:new].uniq!
                   options[:new].each do |data|
-                    record_add \
-                      << #{self}.where('#{options[:compare]}'=>data['#{options[:compare]}']).first_or_create(data)
+                    date = data.symbolize_keys
+                    record_add << #{self}
+                      .where('#{options[:compare]}' => data['#{options[:compare]}'.to_sym])
+                      .first_or_create(data)
                   end 
                 end
                 
@@ -82,7 +93,7 @@ module ActiveRecord
               #{depend_relations}
             end
             def compare
-              '#{options[:compare]}'
+              '#{options[:compare]}'.to_sym
             end
             def model
               #{self}
@@ -98,31 +109,32 @@ module ActiveRecord
       module InstanceMethods
 
         #
-        # has_many_update(result: array or int) - update element in has_many table
-        # and return array [new_id, del_id]
-        # options(type: hash)
-        # :data(type: hash) - data for update
-        # :relation(type: str, symbol) - modifi with tableize
+        # +has_many_update+ ( return array) [new_id, del_id]
+        # options
+        #   :data( type: hash) - data for updte
+        #   :relation( type: str, symbol) - modifi with tableize
         #
         
         def has_many_update(options)
-          options_default = {
-            :data=>{'title'=>""},
-            :auto_remove=>false 
+          options_default = { 
+            :data => { :title => ""}
           }
+
           options = options_default.merge options
-          full_compare = {compare => options[:data][compare]}
+          options[:data] = options[:data].symbolize_keys
+          full_compare = { compare => options[:data][compare] }
+
           object_id = id
           delete_id = nil
           
           if actuale? :relation => options[:relation]
-            #create new object and finish
+            # create new object and finish
             object = model.where(full_compare).first_or_create(options[:data])
             object_id = object.id
           else
             object_tmp = model.where(full_compare)[0]
             unless object_tmp.nil?
-              #set new object and delete old
+              # set new object and delete old
               delete_id = (object_id == object_tmp.id) ? nil : object_id
               object_id = object_tmp.id
             else
@@ -144,9 +156,9 @@ module ActiveRecord
         end
         
         #
-        # actuale?(result: boolean) - check the acutuality of element in has_many table
-        # options(type: hash)
-        # :relation - exclude current relation 
+        # +actuale?+ - check the acutuality of element in has_many table
+        # options
+        #   :relation( string, symbol) - exclude current relation 
         #
         
         def actuale? (options = { :relation => "" })
@@ -166,15 +178,13 @@ module ActiveRecord
       end
        
       #
-      # destroy_filter - method for before_delete
-      # check actuale record and return true for delete
-      # or false for leave
+      # +destroy_filter+ - method for before_destroy, check actuale record and
+      # return true for delete or false for leave
       #
       
       def destroy_filter
         not actuale?
       end
-      
     end
   end
 end
