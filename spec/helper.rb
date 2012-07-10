@@ -23,6 +23,17 @@ ActiveRecord::Schema.define(:version => 1) do
   create_table :locations do |t|
     t.string :title
   end    
+  
+  create_table :locals do |t|
+    t.string :title
+  end    
+  create_table :company_locals do |t|
+    t.references :local
+    t.references :company
+  end    
+  create_table :companies do |t|
+    t.string :title
+  end    
 end
 
 class Experience < ActiveRecord::Base
@@ -30,10 +41,14 @@ class Experience < ActiveRecord::Base
   belongs_to :location, :dependent => :destroy
 end
 
-class Location < ActiveRecord::Base
-  self.table_name = 'locations'
-  has_many :experiences
-  validates :title, :presence =>  true
-  
-  acts_has_many
+class CompanyLocal < ActiveRecord::Base
+  self.table_name = 'company_locals'
+  belongs_to :local
+  belongs_to :company
+end
+
+class Company < ActiveRecord::Base
+  self.table_name = 'companies'
+  has_many :company_locals, :dependent => :destroy
+  has_many :locals, :through => :company_locals
 end

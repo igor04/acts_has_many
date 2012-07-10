@@ -73,7 +73,7 @@ company.actuale? # => true
 company.actuale? relations: :users # => true
 
 # Suggestion: if you want to destroy user
-user2.destroy # user will be destroyed, company will rollback (because company is used by other user)
+# user2.destroy #=> user will be destroyed, company will rollback (because company is used by other user)
 
 company.id 	# => 1
 update_id, delete_id  = company.has_many_update(data: { title: 'Apple'}, relation: :users)
@@ -84,7 +84,7 @@ user2.company = Company.find(update_id)
 user2.save
 
 # Suggestion: if you want to destroy user now
-user2.destroy # user and company will be destroyed (because company is used only by user2)
+# user2.destroy #=> user and company will be destroyed (because company is used only by user2)
 
 Company.all # [#<Company id: 1, title: "Google">, #<Company id: 2, title: "Apple"]
 

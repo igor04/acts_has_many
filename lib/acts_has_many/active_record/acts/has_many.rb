@@ -75,7 +75,7 @@ module ActiveRecord
                 unless options[:new].nil?
                   options[:new].uniq!
                   options[:new].each do |data|
-                    date = data.symbolize_keys
+                    data = data.symbolize_keys
                     record_add << #{self}
                       .where('#{options[:compare]}' => data['#{options[:compare]}'.to_sym])
                       .first_or_create(data)
@@ -118,7 +118,7 @@ module ActiveRecord
         
         def has_many_update(options)
           options_default = { 
-            :data => { :title => ""}
+            :data => { title: "" }
           }
 
           options = options_default.merge options
@@ -128,7 +128,7 @@ module ActiveRecord
           object_id = id
           delete_id = nil
           
-          if actuale? :relation => options[:relation]
+          if actuale? relation: options[:relation]
             # create new object and finish
             object = model.where(full_compare).first_or_create(options[:data])
             object_id = object.id
@@ -162,7 +162,7 @@ module ActiveRecord
         #   :relation( string, symbol) - exclude current relation 
         #
         
-        def actuale? (options = { :relation => "" })
+        def actuale? (options = { relation: "" })
           actuale = false
           
           depend_relations.each do |relation|
