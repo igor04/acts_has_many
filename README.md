@@ -99,7 +99,7 @@ delete_id 	# => 1
 
 company.destroy # => true
 
-# this situation with delete_id best way is "company.delete" because you miss recheck actuality
+# this situation with delete_id best way is "company.delete" because you miss unnecessary check actuality
 ```
 
 ### has_many_update_through used with has_many :through and get array parameters
@@ -129,7 +129,5 @@ new_rows, delete_ids = Company.has_many_update_through( update: data, new: date,
 
 user.companies = new_rows # update user companies
 
-delete_ids.each do |id|
-  Company.finde(id).destroy # necessary for correct delete record ( will be fixed)
-end
+Company.delete(delete_ids) # for delete_ids from has_many_update_through best way is to use "delete" and miss unnecessary check
 ```

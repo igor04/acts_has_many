@@ -79,6 +79,7 @@ module ActiveRecord
                     record_add << #{self}
                       .where('#{options[:compare]}' => data['#{options[:compare]}'.to_sym])
                       .first_or_create(data)
+                    record_del.delete record_add.last.id
                   end 
                 end
                 
