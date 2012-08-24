@@ -39,6 +39,8 @@ end
 class Experience < ActiveRecord::Base
   self.table_name = 'experiences'
   belongs_to :location, :dependent => :destroy
+
+  acts_has_many_for :location
 end
 
 class CompanyLocal < ActiveRecord::Base
