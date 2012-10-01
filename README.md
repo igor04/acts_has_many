@@ -33,13 +33,13 @@ end
 # OR
 
 class Company < ActiveRecord::Base
-  acts_has_many relations: [:users] # array necessary relations
+  acts_has_many :users # list necessary relations
   
   has_many :users
 end
 
 # acts_has_many options:
-# 	:relations( array; default: has many relation which are written above) - necessary relations
+# 	list relations(it maybe missed if you use has many relation which are written above)
 # 	:compare( string or symbol; default: :title) - name column with unique elements in table
 # 	:through( boolean; default: false) - if you use has_many :through
 
@@ -60,9 +60,7 @@ company.actuale? :users # => false ( exclude 1 record of current relation)
 
 company   # => <Company id: 1, title: "Microsoft"> 
 
-update_id, delete_id  = company.has_many_update(data: { title: 'Google'}, relation: :users)
-# or
-#   update_id, delete_id  = company.has_many_update({ title: 'Google'}, :users)
+update_id, delete_id  = company.has_many_update({ title: 'Google'}, :users)
 # or
 #   update_id, delete_id  = company.update_with_users({ title: 'Google'})
 
