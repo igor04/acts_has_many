@@ -33,100 +33,113 @@ end
 # OR
 
 class Company < ActiveRecord::Base
-  acts_has_many :users # list necessary relations
-  
   has_many :users
+
+  acts_has_many :users # list necessary relations
 end
 
 # acts_has_many options:
-# 	list relations(it maybe missed if you use has many relation which are written above)
-# 	:compare( string or symbol; default: :title) - name column with unique elements in table
-# 	:through( boolean; default: false) - if you use has_many :through
+#   list relations(it maybe missed if you use has many relation which are written above)
+#   :compare( string or symbol; default: :title) - name column with unique elements in table
+#   :through( boolean; default: false) - if you use has_many :through
 
 
-company = Company.create(:title => 'Microsoft')
+company = Company.create(title: 'Microsoft')
 Company.dependent_relations # => ["users"]
 Company.compare             # => :title
 
-company.actuale? # => false
+company.actuale?            # => false
 
 user = User.create do |user|
-	user.company = company
-	# ...
+  user.company = company
+  # ...
 end
 
-company.actuale?        # => true
-company.actuale? :users # => false ( exclude 1 record of current relation)
+company.actuale?            # => true
+company.actuale? :users     # => false ( exclude 1 record of current relation)
 
-company   # => <Company id: 1, title: "Microsoft"> 
+company                     # => <Company id: 1, title: "Microsoft"> 
 
-update_id, delete_id  = company.has_many_update({ title: 'Google'}, :users)
+update_record, delete_record  = company.has_many_update({ title: 'Google' }, :users)
 # or
-#   update_id, delete_id  = company.update_with_users({ title: 'Google'})
+#   update_record, delete_record  = company.update_with_users({ title: 'Google' })
 
-update_id # => 1
-delete_id # => nil
-company   # => <Company id: 1, title: "Google"> 
+update_record               # => <Company id: 1, title: "Google"> 
+delete_record               # => nil
 
 user2 = User.create do |user|
-	user.company = company
-	# ...
+  user.company = company
+  # ...
 end
 
-company.actuale? # => true
-company.actuale? :users # => true
+company.actuale?            # => true
+company.actuale? :users     # => true
 
 # if you want to destroy user
 #   user2.destroy # => user will be destroyed, company will rollback (because company is used by other user)
 
-company   # => <Company id: 1, title: "Google"> 
-update_id, delete_id  = company.has_many_update({ title: 'Apple'}, :users)
-update_id # => 2
-delete_id # => nil
+company                     # => <Company id: 1, title: "Google"> 
+update_record, delete_id  = company.has_many_update({ title: 'Apple' }, :users)
+update_record               # => <Company id: 2, title: "Apple"> 
+delete_record               # => nil
 
-user2.company = Company.find(update_id)
+user2.company = update_record
 user2.save
 
 # if you want to destroy user now
 #   user2.destroy # => user and company will be destroyed (because company is used only by user2)
 
-Company.all # [#<Company id: 1, title: "Google">, #<Company id: 2, title: "Apple"]
+Company.all                 # =>  [#<Company id: 1, title: "Google">, #<Company id: 2, title: "Apple"]
 
-company.destroy # => false (because company is used)
+company.destroy             # => false (because company is used)
 
-companu 	# => <Company id: 1, title: "Google">
-update_id, delete_id  = company.has_many_update({ title: 'Apple'}, :users)
-update_id 	# => 2
-delete_id 	# => 1
+companu                     # => <Company id: 1, title: "Google">
+update_record, delete_record  = company.has_many_update({ title: 'Apple' }, :users)
+update_record               # => <Company id: 2, title: "Apple"> 
+delete_record               # => <Company id: 1, title: "Google">
 
-user2.company = Company.find(update_id)
+user2.company = update_record
 user2.save
 
-company.destroy # => true
+company.destroy             # => true
 
-# this situation with delete_id best way is "company.delete" because you miss unnecessary check actuality
-
-# if you need update element and you don't care where it uses you can skip relation
-Company.first.has_many_update({title: "IBM"}) 
-# in this case check all relation but if you use this gem you don't have unused record
-# that why this exampl is equal Company.first_or_create({title: "IBM"})
-
+# this situation with delete_record best way is "company.delete" because you miss unnecessary check actuality
 
 ```
-### Also you can use has_many_update!
+
+### has_many_update_through used with has_many :through and get array parameters
+has_many_update_through is helpful method for has_many_update and use it, you can use has_many_update 
+here too, and to do without has_many_update_through
+  
+For example:
+
 ```ruby
+class UserCompany < ActiveRecord::Base
+  belongs_to :user
+  belongs_to :company
 
-user = User.first
-user.company.has_many_update!({title: "Google"}, user)
+class Company < ActiveRecord::Base
+  has_many :users, through: :user_company
+  has_many :user_company
 
-user.reload # becaus variable user have old data
-user.company # <Company id: 3, title: "Google">
-# you don't need update user
+  acts_has_many :users, through: true
+end
+
+class User < ActiveRecord::Base
+  has_many :user_company, dependent: :destroy
+  has_many :companies, through: :user_company
+end
+
+new_rows, delete_ids = Company.has_many_through_update(update: data, new: date, relation: :users)
+
+user.companies = new_rows  # update user companies
+
+Company.delete(delete_ids) # for delete_ids from has_many_update_through best way is to use "delete" and miss unnecessary check
 ```
+
 ### Use acts_has_many_for with acts_has_many
-When use acts_has_many_for you don't need set relation and give parent record in case with has_many_update!
+When use acts_has_many_for you can user attributes
 ```ruby
-
 class User < ActiveRecord::Base
   belongs_to :company, dependent: :destroy
   acts_has_many_for :company
@@ -138,54 +151,49 @@ class Company < ActiveRecord::Base
   acts_has_many # after necessary relation
 end
 
-# in this case 
 
-user = User.first
-company = user.company
-company.has_many_update!({title: "Google"}) # don't give record user
+user = User.create name: 'Bill', company_attributes: { title: 'Microsoft' }
 
-user.reload # becaus variable user have old data
-user.company # <Company id: 3, title: "Google">
+or
 
-new_id, del_id = user.company.has_many_update({title: "Google"}) # don't give relation
+user.company_attributes = { title: 'Google' }
 
-# in this case has_many_update doesn't know about relation and the same as if you skip relation(see above)
-new_id, del_id = Company.first.has_many_update({title: "something else"}) 
+or 
 
-# not work becous has_many_update! doesn't know about parent record
-Company.first.has_many_update!({title: "something else"}) 
-```
+user.company_attributes = Company.first
+user.save
 
-### has_many_update_through used with has_many :through and get array parameters
-has_many_update_through is helpful method for has_many_update and use it, you can use has_many_update 
-here too, and to do without has_many_update_through
-	
-For example:
-
-```ruby
+# if you use has_many_through you can use collection
 class UserCompany < ActiveRecord::Base
   belongs_to :user
   belongs_to :company
 
 class Company < ActiveRecord::Base
-  has_many :users, :through => :user_company
-  acts_has_many :through => true
-  
+  has_many :users, through: :user_company
   has_many :user_company
+
+  acts_has_many :users, through: true
 end
 
 class User < ActiveRecord::Base
-  has_many :user_company, :dependent => :destroy
-  has_many :companies, :through => :user_company
+  has_many :user_company, dependent: :destroy
+  has_many :companies, through: :user_company
+
+  acts_has_many_for :companies
 end
 
-new_rows, delete_ids = Company.has_many_update_through( update: data, new: date, relation: :users)
+user = User.create name: 'Bob', companies_collection: [{ title: 'MS' }, { title: 'Google' }]
 
-user.companies = new_rows # update user companies
+or
 
-Company.delete(delete_ids) # for delete_ids from has_many_update_through best way is to use "delete" and miss unnecessary check
+user.companies_collection = [{ title: 'MS' }, { title: 'Google' }]
+
+or
+
+user.companies_collection = Company.all
+user.save
+
 ```
-
 
 Contributing
 ------------
@@ -193,7 +201,6 @@ You can help improve this project.
 
 Here are some ways *you* can contribute:
 
-* by using alpha, beta, and prerelease versions
 * by reporting bugs
 * by suggesting new features
 * by writing or editing documentation

@@ -1,106 +1,106 @@
 require 'helper'
 
-(1..3).each do |c|
+class Local < ActiveRecord::Base
+  self.table_name = 'locals'
+  has_many :companies, :through => :company_locals
+  has_many :company_locals
 
-  case c
-  when 1
-    class Local < ActiveRecord::Base
-      self.table_name = 'locals'
-      validates :title, :presence =>  true
+  acts_has_many :companies, :through => true, compare: 'title'
+end
 
-      has_many :companies, :through => :company_locals
-      acts_has_many :through => true
-      has_many :company_locals
-    end
-  
-  when 2
-    class Local < ActiveRecord::Base
-      self.table_name = 'locals'
-      validates :title, :presence =>  true
+describe 'acts_has_many with :through' do
+  it 'parent.child_colletion=<data>' do
+    Local.delete_all
 
-      has_many :companies, :through => :company_locals
-      has_many :company_locals
-      acts_has_many through: true, relations: [:companies], compare: :title
-    end
-  
-  when 3
-    class Local < ActiveRecord::Base
-      self.table_name = 'locals'
-      validates :title, :presence =>  true
+    company = Company.create title: 'test', locals_collection: [{title: 'testx'}]
+    company.locals.first.title.should eq 'testx'
 
-      has_many :companies, :through => :company_locals
-      has_many :company_locals
-      acts_has_many :through => true, relations: ['companies'], compare: 'title'
-    end
+    company.locals_collection = [{title: 'test2'}]
+    company.locals.first.title.should eq 'test2'
+    Local.all.size.should be 2
+
+    company.save # after save we clear garbage
+    company.locals.first.title.should eq 'test2'
+    Local.all.size.should be 1
+
+    company2 = Company.create title: 'test2', locals_collection: [{title: 'test2'},{title: 'test1'}]
+    company.locals_collection = Local.all
+    company.locals.size.should be 2
+
+    company.save
+    Local.all.size.should be 2
+
+    company.locals_collection = [{title: 'test3'}, {title: 'test2'}]
+    company.save
+
+    company.locals.size.should be 2
+    Local.all.size.should be 3
+
+    company.locals_collection = [{title: 'test1'}]
+    Local.all.size.should be 3
+
+    company.save
+    Local.all.size.should be 2
+
+    company2.locals_collection = [Local.last]
+    Local.all.size.should be 2
+
+    company2.save
+    Local.all.size.should be 1
+    company2.locals.should eq company.locals
+
+    company2.locals_collection = []
+    company2.save
+    company2.locals.should eq []
+
+    company.locals_collection = []
+    company.save
+
+    Local.all.should eq []
   end
+  it 'update' do
+    Local.delete_all
 
-  describe "Initialization tipe #{c}" do
-    describe 'acts_has_many with :through' do
-      it 'update' do
-        Local.delete_all
-        
-        Local.all.size.should == 0
-        
-        new_row, del_ids = Local.has_many_through_update( :new => [
-          { title: 'test0'},
-          { title: 'test1'},
-          { title: 'test2'},
-          { title: 'test3'},
-          { title: 'test0'},
-        ], relation: :companies)
+    Local.all.size.should == 0
 
-        new_row.count.should == 4
-        del_ids.should == []
-        Local.all.size.should == 4
+    new_records, del_records = Local.has_many_through_update( :new => [
+      { title: 'test0'},
+      { title: 'test1'},
+      { title: 'test2'},
+      { title: 'test3'},
+      { title: 'test0'},
+    ], relation: :companies)
 
-        new_row1, del_ids1 = Local.has_many_through_update( 
-        :new => [
-          { title: 'test0'},
-          { 'title' => 'test1'}],
-        :update => {
-          new_row[2].id => {title: 'test2s'},
-          new_row[3].id.to_s => {'title' => 'test3s'}
-        }, relation: 'companies')
+    expect(new_records.count).to be 4
+    expect(del_records).to eq []
+    expect(Local.all.size).to be 4
 
-        new_row1[0].id.should == new_row[0].id
-        new_row1[1].id.should == new_row[1].id
-        new_row1[2].id.should == new_row[2].id
-        new_row1[3].id.should == new_row[3].id
-        del_ids1.should == []
-        Local.find(new_row[2].id).title.should == 'test2s'
-        Local.find(new_row[3].id).title.should == 'test3s'
-        Local.all.size.should == 4
+    new_records_1, del_records_1 = Local.has_many_through_update(
+    :new => [
+      { title: 'test0'},
+      { 'title' => 'test1'}
+    ],
+    :update => {
+      new_records[2].id => {title: 'test2s'},
+      new_records[3].id.to_s => {'title' => 'test3s'}
+    }, relation: 'companies')
+
+    expect(new_records_1.map(&:id).sort!).to eq new_records.map(&:id)
+    expect(Local.find(new_records[2].id).title).to eq 'test2s'
+    expect(Local.find(new_records[3].id).title).to eq 'test3s'
+    expect(Local.all.size).to be 4
 
 
-        new_row, del_ids = Local.has_many_through_update( 
-        :new => [
-          { title: 'test0'},
-          { title: 'test3s'}],
-        :update => {
-          new_row1[2].id => {title: 'test2s'},
-          new_row1[3].id => {title: ''}
-        }, relation: :companies)
+    new, del = Local.has_many_through_update( 
+    :new => [
+      { title: 'test0'},
+      { title: 'test3s'}],
+    :update => {
+      new_records_1[2].id => {title: 'test2s'},
+      new_records_1[3].id => {title: ''}
+    }, relation: :companies)
 
-        del_ids.should == []
-        new_row.size.should == 3
-
-        new_row, del_ids = Local.has_many_through_update( 
-        :update => {
-          new_row1[2].id => {title: 'test2s'},
-          new_row1[3].id => {title: ''}
-        }, relation: :companies)
-
-        del_ids.should == [new_row1[3].id]
-        new_row.size.should == 1
-
-        new_row, del_ids = Local.has_many_through_update( 
-        :new => [{ title: 'test0'}],
-        :update => { new_row1[2].id => {title: 'test0'} }, relation: :companies)
-
-        new_row.size.should == 1
-
-        Local.all.size.should == 4
-      end
-    end
+    expect(del.size).to be 1
+    expect(new.size).to be 3
   end
 end

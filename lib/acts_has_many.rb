@@ -1,2 +1,5 @@
-require 'acts_has_many/active_record/acts/has_many'
-ActiveRecord::Base.class_eval { include ActiveRecord::Acts::HasMany}
+require 'acts_has_many/active_record/acts_has_many'
+require 'acts_has_many/active_record/acts_has_many/child'
+require 'acts_has_many/active_record/acts_has_many/parent'
+
+ActiveRecord::Base.class_eval { include ActiveRecord::ActsHasMany}
