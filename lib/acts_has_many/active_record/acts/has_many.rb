@@ -91,6 +91,10 @@ module ActiveRecord
 
         def acts_has_many_for *relations
           relations.each do |relation|
+            unless reflect_on_association relation.to_sym
+              raise ArgumentError, "No association found for name `#{relation}'. Has it been defined yet?"
+            end
+
             relation = relation.to_s
             class_eval <<-EOV
               def #{relation}
@@ -105,8 +109,43 @@ module ActiveRecord
                   super
                 end
               end
+
+              def #{relation}= data
+                current = self[:#{relation.foreign_key}]
+                self.tmp_garbage ||= {}
+
+                if data.is_a? Hash
+                  if current
+                    new, del = #{relation.classify}.find(current).has_many_update data, '#{self.name.tableize}'
+                  else
+                    new, del = #{relation.classify}.new.has_many_update data, '#{self.name.tableize}'
+                  end
+
+                  self[:#{relation.foreign_key}] = new
+                  self.tmp_garbage.merge!({ #{relation}: del }) if del
+                elsif data.is_a? #{relation.classify}
+                  self[:#{relation.foreign_key}] = data.id
+                  self.tmp_garbage.merge!({ #{relation}: current }) if current
+                else
+                  self.tmp_garbage = {}
+                  super
+                end
+              end
+
             EOV
           end
+
+
+          class_eval <<-EOV
+            attr_accessor :tmp_garbage
+
+            after_save do
+              tmp_garbage.each do |rel, val|
+                eval(rel.to_s.classify).find(val).destroy
+              end if tmp_garbage
+              tmp_garbage = {}
+            end
+          EOV
         end
 
         #

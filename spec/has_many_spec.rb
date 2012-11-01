@@ -140,6 +140,28 @@ require 'helper'
           location.id.should == add_loc
           experience.location.id.should == del_loc
         end
+
+        it "'parent.child = <data>' should change child value" do
+          experience = Experience.create location: {title: "ukraine"}, title: "test experience2"
+
+          Location.all.size.should be 1
+          experience.location.title.should eq "ukraine"
+          
+          Experience.create location: {title: "ukraine"}, title: "test experience2"
+          Location.all.size.should be 1
+
+          experience.location = {"title" => "italy"}
+          experience.save
+          
+          Location.all.size.should be 2
+          experience.location.title.should eq "italy"
+          
+          experience.location = {"title" => "ukraine"}
+          experience.save
+
+          Location.all.size.should be 1
+          experience.location.title.should eq "ukraine"
+        end
       end
 
       it 'destroy' do
