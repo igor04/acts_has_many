@@ -53,4 +53,5 @@ class Company < ActiveRecord::Base
   self.table_name = 'companies'
   has_many :company_locals, :dependent => :destroy
   has_many :locals, :through => :company_locals
+  acts_has_many_for :locals
 end
