@@ -33,9 +33,9 @@ end
 # OR
 
 class Company < ActiveRecord::Base
-  acts_has_many :users # list necessary relations
-  
   has_many :users
+
+  acts_has_many :users # list necessary relations
 end
 
 # acts_has_many options:
@@ -60,13 +60,12 @@ company.actuale? :users # => false ( exclude 1 record of current relation)
 
 company   # => <Company id: 1, title: "Microsoft"> 
 
-update_id, delete_id  = company.has_many_update({ title: 'Google'}, :users)
+update_record, delete_record  = company.has_many_update({ title: 'Google'}, :users)
 # or
-#   update_id, delete_id  = company.update_with_users({ title: 'Google'})
+#   update_record, delete_record  = company.update_with_users({ title: 'Google'})
 
-update_id # => 1
-delete_id # => nil
-company   # => <Company id: 1, title: "Google"> 
+update_record # => <Company id: 1, title: "Google"> 
+delete_record # => nil
 
 user2 = User.create do |user|
 	user.company = company
@@ -80,11 +79,11 @@ company.actuale? :users # => true
 #   user2.destroy # => user will be destroyed, company will rollback (because company is used by other user)
 
 company   # => <Company id: 1, title: "Google"> 
-update_id, delete_id  = company.has_many_update({ title: 'Apple'}, :users)
-update_id # => 2
-delete_id # => nil
+update_record, delete_id  = company.has_many_update({ title: 'Apple'}, :users)
+update_record # => <Company id: 2, title: "Apple"> 
+delete_record # => nil
 
-user2.company = Company.find(update_id)
+user2.company = update_record
 user2.save
 
 # if you want to destroy user now
@@ -95,65 +94,17 @@ Company.all # [#<Company id: 1, title: "Google">, #<Company id: 2, title: "Apple
 company.destroy # => false (because company is used)
 
 companu 	# => <Company id: 1, title: "Google">
-update_id, delete_id  = company.has_many_update({ title: 'Apple'}, :users)
-update_id 	# => 2
-delete_id 	# => 1
+update_record, delete_record  = company.has_many_update({ title: 'Apple'}, :users)
+update_record 	# => <Company id: 2, title: "Apple"> 
+delete_record 	# => <Company id: 1, title: "Google">
 
-user2.company = Company.find(update_id)
+user2.company = update_record
 user2.save
 
 company.destroy # => true
 
-# this situation with delete_id best way is "company.delete" because you miss unnecessary check actuality
+# this situation with delete_record best way is "company.delete" because you miss unnecessary check actuality
 
-# if you need update element and you don't care where it uses you can skip relation
-Company.first.has_many_update({title: "IBM"}) 
-# in this case check all relation but if you use this gem you don't have unused record
-# that why this exampl is equal Company.first_or_create({title: "IBM"})
-
-
-```
-### Also you can use has_many_update!
-```ruby
-
-user = User.first
-user.company.has_many_update!({title: "Google"}, user)
-
-user.reload # becaus variable user have old data
-user.company # <Company id: 3, title: "Google">
-# you don't need update user
-```
-### Use acts_has_many_for with acts_has_many
-When use acts_has_many_for you don't need set relation and give parent record in case with has_many_update!
-```ruby
-
-class User < ActiveRecord::Base
-  belongs_to :company, dependent: :destroy
-  acts_has_many_for :company
-end
-
-class Company < ActiveRecord::Base
-  has_many :users
-
-  acts_has_many # after necessary relation
-end
-
-# in this case 
-
-user = User.first
-company = user.company
-company.has_many_update!({title: "Google"}) # don't give record user
-
-user.reload # becaus variable user have old data
-user.company # <Company id: 3, title: "Google">
-
-new_id, del_id = user.company.has_many_update({title: "Google"}) # don't give relation
-
-# in this case has_many_update doesn't know about relation and the same as if you skip relation(see above)
-new_id, del_id = Company.first.has_many_update({title: "something else"}) 
-
-# not work becous has_many_update! doesn't know about parent record
-Company.first.has_many_update!({title: "something else"}) 
 ```
 
 ### has_many_update_through used with has_many :through and get array parameters
@@ -169,9 +120,9 @@ class UserCompany < ActiveRecord::Base
 
 class Company < ActiveRecord::Base
   has_many :users, :through => :user_company
-  acts_has_many :through => true
-  
   has_many :user_company
+
+  acts_has_many :users, :through => true
 end
 
 class User < ActiveRecord::Base
@@ -186,6 +137,35 @@ user.companies = new_rows # update user companies
 Company.delete(delete_ids) # for delete_ids from has_many_update_through best way is to use "delete" and miss unnecessary check
 ```
 
+### Use acts_has_many_for with acts_has_many
+When use acts_has_many_for you can user attributes
+```ruby
+
+user = User.create name: 'Bill', company_attributes: { title: 'Microsoft' }
+
+or
+
+user.company_attributes = { title: 'Google' }
+
+or 
+
+user.company_attributes = Company.first
+user.save
+
+# if you use has_many_through you can use collection
+
+user = User.create name: 'Bob', companies_collection: [{title: 'MS'}, {title: 'Google'}]
+
+or
+
+user.companies_collection = [{title: 'MS'}, {title: 'Google'}]
+
+or
+
+user.company_collection = Company.all
+user.save
+
+```
 
 Contributing
 ------------
@@ -193,7 +173,6 @@ You can help improve this project.
 
 Here are some ways *you* can contribute:
 
-* by using alpha, beta, and prerelease versions
 * by reporting bugs
 * by suggesting new features
 * by writing or editing documentation

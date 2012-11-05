@@ -1,198 +1,165 @@
 require 'helper'
 
-(1..3).each do |c|
+class Location < ActiveRecord::Base
+  self.table_name = 'locations'
+  has_many :experiences
 
-  case c
-  when 1
-    class Location < ActiveRecord::Base
-      self.table_name = 'locations'
-      has_many :experiences
-      validates :title, :presence =>  true
-        
-      acts_has_many
+  acts_has_many :experiences, compare: 'title'
+end
+
+describe 'acts_has_many' do
+  context 'update method' do
+    let(:location){Location.create :title => "italy"}
+    let(:experience){Experience.create :location => location, :title => "test experience1"}
+    before :each do
+      Location.delete_all
+      Experience.delete_all
     end
-  
-  when 2
-    class Location < ActiveRecord::Base
-      self.table_name = 'locations'
-      acts_has_many relations: [:experiences], compare: :title
 
-      has_many :experiences
-      validates :title, :presence =>  true
+    it 'has_many_update data, relation' do
+      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"}, "experiences")
+
+      expect(Location.all.size).to be 1
+      expect(location).to eq add_loc
+      expect(del_loc).to be nil
+      expect(experience.location.title).to eq "ukraine"
+
+      Experience.create :location => location, :title => "test experience2" 
+
+      add_loc, del_loc = experience.location.has_many_update({"title" => "italy"}, "experiences")
+
+      expect(Location.all.size).to be 2
+      expect(location).not_to eq add_loc
+      expect(del_loc).to be nil
+
+      experience.location = Location.find(add_loc)
+      expect(experience.location.title).to eq "italy"
+
+      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"}, :experiences)
+
+      expect(location).to eq add_loc
+      expect(experience.location).to eq del_loc
     end
-  
-  when 3
-    class Location < ActiveRecord::Base
-      self.table_name = 'locations'
-      acts_has_many relations: ['experiences'], compare: 'title'
 
-      has_many :experiences
-      validates :title, :presence =>  true
+    it 'update_with_<relation> data' do
+      add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
+
+      expect(Location.all.size).to be 1
+      expect(location).to eq add_loc
+      expect(del_loc).to be nil
+      expect(experience.location.title).to eq "ukraine"
+
+      Experience.create :location => location, :title => "test experience2" 
+
+      add_loc, del_loc = experience.location.update_with_experiences({"title" => "italy"})
+
+      expect(Location.all.size).to be 2
+      expect(location.id).not_to eq add_loc
+      expect(del_loc).to be nil
+
+      experience.location = Location.find(add_loc)
+      expect(experience.location.title).to eq "italy"
+
+      add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
+
+      expect(location).to eq add_loc
+      expect(experience.location).to eq del_loc
+    end
+
+    it "parent.child_attributes= Hash" do
+      experience = Experience.create location_attributes: {title: "ukraine"}, title: "test experience2"
+
+      Location.all.size.should be 1
+      experience.location.title.should eq "ukraine"
+
+      Experience.create location_attributes: {title: "ukraine"}, title: "test experience2"
+      Location.all.size.should be 1
+
+      experience.location_attributes = {"title" => "italy"}
+      experience.save
+
+      Location.all.size.should be 2
+      experience.location.title.should eq "italy"
+
+      experience.location_attributes = {"title" => "ukraine"}
+      experience.save
+
+      Location.all.size.should be 1
+      experience.location.title.should eq "ukraine"
+    end
+
+    it "parent.child_attributes= exist_record" do
+      experience = Experience.create location_attributes: {title: "ukraine"}, title: "test experience2"
+
+      Location.all.size.should be 1
+      experience.location.title.should eq "ukraine"
+
+      Experience.create location_attributes: Location.first, title: "test experience2"
+      Location.all.size.should be 1
+
+      experience.location_attributes = {"title" => "italy"}
+      experience.save
+
+      Location.all.size.should be 2
+      experience.location.title.should eq "italy"
+
+      experience.location_attributes = Location.first
+      experience.save
+
+      Location.all.size.should be 1
+      experience.location.title.should eq "ukraine"
     end
   end
 
-  describe "Initialization tipe #{c}" do
-    describe 'acts_has_many' do
-      context 'update method' do
-        let(:location){Location.create :title => "italy"}
-        let(:experience){Experience.create :location => location, :title => "test experience1"}
-        before :each do
-          Location.delete_all
-          Experience.delete_all
-        end
+  it 'destroy' do
+    Location.delete_all
+    Experience.delete_all
 
-        it 'has_many_update(data: data, relation: relation)' do
-          add_loc, del_loc = experience.location.has_many_update(
-              :data => {"title" => "ukraine"}, :relation => "experiences")
-          
-          Location.all.size.should == 1
-          location.id.should == add_loc
-          del_loc.should == nil
-          experience.location.title.should == "ukraine"
-          
-          Experience.create :location => location, :title => "test experience2" 
-              
-          add_loc, del_loc = experience.location.has_many_update({"title" => "italy"}, "experiences")
-          
-          Location.all.size.should == 2
-          location.id.should_not == add_loc
-          del_loc.should == nil
-          experience.location = Location.find(add_loc)
-          experience.location.title.should == "italy"
-          
-          add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"})
-          
-          location.id.should == add_loc
-          experience.location.id.should == del_loc
-        end
-      
-        it 'has_many_update!(data)' do
-          # update independent Location
-          new_row = experience.location.has_many_update!({"title" => "ukraine"})
-          
-          Location.all.size.should == 1
-          location.id.should == new_row.id
-          experience.location.title.should == "ukraine"
-          
-          Experience.create :location => location, :title => "test experience2" 
+    location = Location.create(:title => "ukraine")
 
-          # don't update and create new Location
-          new_row = experience.location.has_many_update!({"title" => "italy"})
+    Experience.create( :location => location, :title => "test" )
 
-          experience.reload
-          Location.all.size.should == 2
-          location.id.should_not == new_row.id
-          experience.location.title.should == "italy"
-          
-          # delete unnecessary Location
-          new_row = experience.location.has_many_update!({"title" => "ukraine"})
+    location.destroy
+    Location.all.size.should == 1
 
-          location.id.should == new_row.id
-          Location.all.size.should == 1
-        end
-      
-        it 'has_many_update!(data, parent_row)' do
-          # update independent Location
-          new_row = location.has_many_update!({"title" => "ukraine"}, experience)
-          
-          Location.all.size.should == 1
-          location.id.should == new_row.id
-          experience.location.title.should == "ukraine"
-          
-          Experience.create :location => location, :title => "test experience2" 
+    Experience.all[0].destroy
+    location.destroy
+    Location.all.size.should == 0
+  end  
 
-          # don't update and create new Location
-          new_row = location.has_many_update!({"title" => "italy"}, experience)
+  it 'actuale?' do
+    Location.delete_all
 
-          experience.reload
-          Location.all.size.should == 2
-          location.id.should_not == new_row.id
-          experience.location.title.should == "italy"
-          
-          # delete unnecessary Location
-          new_row = location.has_many_update!({"title" => "italy"}, Experience.where(location_id: location).first) #becaus experience wos reload
+    location = Location.create(:title => "ukraine")
 
-          location.id.should_not == new_row.id
-          location.frozen?.should == true
-          Location.all.size.should == 1
-        end
+    location.actuale?.should == false
+    location.actuale?("experiences").should == false
 
-        it 'update_with_<relation>(data)' do
-          add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
-          
-          Location.all.size.should == 1
-          location.id.should == add_loc
-          del_loc.should == nil
-          experience.location.title.should == "ukraine"
-          
-          Experience.create :location => location, :title => "test experience2" 
-              
-          add_loc, del_loc = experience.location.update_with_experiences({"title" => "italy"})
-          
-          Location.all.size.should == 2
-          location.id.should_not == add_loc
-          del_loc.should == nil
-          experience.location = Location.find(add_loc)
-          experience.location.title.should == "italy"
-          
-          add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
-          
-          location.id.should == add_loc
-          experience.location.id.should == del_loc
-        end
-      end
+    Experience.create( :title => 'test', :location => location )
 
-      it 'destroy' do
-        Location.delete_all
-        Experience.delete_all
-        
-        location = Location.create(:title => "ukraine")
-        
-        Experience.create( :location => location, :title => "test" )
-        
-        location.destroy
-        Location.all.size.should == 1
-        
-        Experience.all[0].destroy
-        location.destroy
-        Location.all.size.should == 0
-      end  
-      
-      it 'actuale?' do
-        Location.delete_all
-        
-        location = Location.create(:title => "ukraine")
-        
-        location.actuale?.should == false
-        location.actuale?(:relation => "experiences").should == false
+    location.actuale?.should == true
+    location.actuale?("experiences").should == false
+    location.actuale?(:experiences).should == false
+    location.actuale?("Experience").should == false
+    location.actuale?("Experience").should == false
 
-        Experience.create( :title => 'test', :location => location )
+    Experience.create( :title => 'test', :location => location )
 
-        location.actuale?.should == true
-        location.actuale?(:relation => "experiences").should == false
-        location.actuale?(:relation => :experiences).should == false
-        location.actuale?(:relation => "Experience").should == false
-        location.actuale?("Experience").should == false
+    location.actuale?.should == true
+    location.actuale?("experiences").should == true
+    location.actuale?(:experiences).should == true
+  end 
 
-        Experience.create( :title => 'test', :location => location )
-        
-        location.actuale?.should == true
-        location.actuale?(:relation => "experiences").should == true
-        location.actuale?(:experiences).should == true
-      end 
+  it 'compare' do
+    Location.compare.should == :title
+  end
 
-      it 'compare' do
-        Location.compare.should == :title
-      end
+  it 'model' do
+    location = Location.create(:title => "ukraine")
+    location.model.should == Location
+  end
 
-      it 'model' do
-        location = Location.create(:title => "ukraine")
-        location.model.should == Location
-      end
-
-      it 'dependent_relations' do
-        Location.dependent_relations.should == ['experiences']
-      end
-    end
+  it 'dependent_relations' do
+    Location.dependent_relations.should == ['experiences']
   end
 end
