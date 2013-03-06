@@ -1,4 +1,4 @@
-# acts_has_many
+# acts_has_many [![Build Status](https://travis-ci.org/igor04/acts_has_many.png?branch=master)](https://travis-ci.org/igor04/acts_has_many)
 
 Acts_has_many gem gives functional for clean update elements *has_many* relation
 (additional is has_many :trhough). The aim is work with has_many relation without gerbage,
