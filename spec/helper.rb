@@ -19,21 +19,21 @@ ActiveRecord::Schema.define(:version => 1) do
   create_table :experiences do |t|
     t.string :title
     t.references :location
-  end  
+  end
   create_table :locations do |t|
     t.string :title
-  end    
-  
+  end
+
   create_table :locals do |t|
     t.string :title
-  end    
+  end
   create_table :company_locals do |t|
     t.references :local
     t.references :company
-  end    
+  end
   create_table :companies do |t|
     t.string :title
-  end    
+  end
 end
 
 class Experience < ActiveRecord::Base

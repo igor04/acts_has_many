@@ -69,7 +69,7 @@ describe 'acts_has_many with :through' do
       { title: 'test2'},
       { title: 'test3'},
       { title: 'test0'},
-    ], relation: :companies)
+    ])
 
     expect(new_records.count).to be 4
     expect(del_records).to eq []
@@ -83,7 +83,7 @@ describe 'acts_has_many with :through' do
     :update => {
       new_records[2].id => {title: 'test2s'},
       new_records[3].id.to_s => {'title' => 'test3s'}
-    }, relation: 'companies')
+    })
 
     expect(new_records_1.map(&:id).sort!).to eq new_records.map(&:id)
     expect(Local.find(new_records[2].id).title).to eq 'test2s'
@@ -91,14 +91,14 @@ describe 'acts_has_many with :through' do
     expect(Local.all.size).to be 4
 
 
-    new, del = Local.has_many_through_update( 
+    new, del = Local.has_many_through_update(
     :new => [
       { title: 'test0'},
       { title: 'test3s'}],
     :update => {
       new_records_1[2].id => {title: 'test2s'},
       new_records_1[3].id => {title: ''}
-    }, relation: :companies)
+    })
 
     expect(del.size).to be 1
     expect(new.size).to be 3
