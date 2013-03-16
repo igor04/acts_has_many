@@ -1,34 +1,25 @@
 module ActiveRecord
   module ActsHasMany
 
-    #
-    # Add class methods: (for use in your model)
-    #   +acts_has_many_for+
-    #   +acts_has_many+
-    #
-
+    # Class methods: (for use in your model)
+    #   <tt>acts_has_many_for</tt>
+    #   <tt>acts_has_many</tt>
     def self.included base
       base.extend ClassMethods
     end
 
     module ClassMethods
 
-      # Add class methods:
-      #   +dependent_relations+
-      #   +compare+
-      #   +model+
-      #   +has_many_through_update+
-      #
-      # Add instance mothods:
-      #   +actuale?+
-      #   +has_many_update+
-      #   +update_with_<relation>+
-      #
+      # Class methods:
+      #   <tt>dependent_relations</tt>
+      #   <tt>compare</tt>
+      #   <tt>model</tt>
+      #   <tt>has_many_through_update</tt>
+      # Instance mothods:
+      #   <tt>actual?</tt>
+      #   <tt>has_many_update</tt>
       # Set:
       #   validates for <compare_element> (uniqueness: true, presence: true)
-      #   before destroy filter
-      #
-
       def acts_has_many *opt
         options = { compare: :title, through: false }
         options.update opt.extract_options!
@@ -47,7 +38,7 @@ module ActiveRecord
           end
         end
 
-        class_eval <<-EOV, __FILE__ , __LINE__
+        class_eval <<-EOV, __FILE__ , __LINE__ + 1
           def self.dependent_relations
             #{dependent_relations}
           end
@@ -64,26 +55,19 @@ module ActiveRecord
           end
 
           validates :#{options[:compare]}, uniqueness: true, presence: true
-          before_destroy :destroy_filter
         EOV
       end
 
-      #
-      # Add class methods:
-      #   +dependent_relations+
-      #
-      #   +<relation>_attributes=+
-      #   or
-      #   +<relation>_collection=+
-      #
+      # Class methods:
+      #   <tt>dependent_relations</tt>
+      #   <tt><relation>_attributes=</tt>
+      #   <tt><relation>_collection=</tt>
       # Set:
       #   after save filter
       #   attribut accessor tmp_garbage
-      #
-
       def acts_has_many_for *relations
-        class_eval <<-EOV, __FILE__ , __LINE__
-          def self.dependent_relations 
+        class_eval <<-EOV, __FILE__ , __LINE__ + 1
+          def self.dependent_relations
             #{relations}
           end
 

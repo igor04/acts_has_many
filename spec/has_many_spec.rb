@@ -16,17 +16,17 @@ describe 'acts_has_many' do
       Experience.delete_all
     end
 
-    it 'has_many_update data, relation' do
-      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"}, "experiences")
+    it 'has_many_update data' do
+      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"})
 
       expect(Location.all.size).to be 1
       expect(location).to eq add_loc
       expect(del_loc).to be nil
       expect(experience.location.title).to eq "ukraine"
 
-      Experience.create :location => location, :title => "test experience2" 
+      Experience.create :location => location, :title => "test experience2"
 
-      add_loc, del_loc = experience.location.has_many_update({"title" => "italy"}, "experiences")
+      add_loc, del_loc = experience.location.has_many_update({"title" => "italy"})
 
       expect(Location.all.size).to be 2
       expect(location).not_to eq add_loc
@@ -35,32 +35,7 @@ describe 'acts_has_many' do
       experience.location = Location.find(add_loc)
       expect(experience.location.title).to eq "italy"
 
-      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"}, :experiences)
-
-      expect(location).to eq add_loc
-      expect(experience.location).to eq del_loc
-    end
-
-    it 'update_with_<relation> data' do
-      add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
-
-      expect(Location.all.size).to be 1
-      expect(location).to eq add_loc
-      expect(del_loc).to be nil
-      expect(experience.location.title).to eq "ukraine"
-
-      Experience.create :location => location, :title => "test experience2" 
-
-      add_loc, del_loc = experience.location.update_with_experiences({"title" => "italy"})
-
-      expect(Location.all.size).to be 2
-      expect(location.id).not_to eq add_loc
-      expect(del_loc).to be nil
-
-      experience.location = Location.find(add_loc)
-      expect(experience.location.title).to eq "italy"
-
-      add_loc, del_loc = experience.location.update_with_experiences({"title" => "ukraine"})
+      add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"})
 
       expect(location).to eq add_loc
       expect(experience.location).to eq del_loc
@@ -123,32 +98,39 @@ describe 'acts_has_many' do
     Location.all.size.should == 1
 
     Experience.all[0].destroy
-    location.destroy
     Location.all.size.should == 0
-  end  
+  end
 
-  it 'actuale?' do
+  it 'destroy' do
+    Location.delete_all
+    Experience.delete_all
+
+    location = Location.create(:title => "ukraine")
+
+    Experience.create( :location => location, :title => "test" )
+
+    location.destroy!
+    Location.all.size.should == 0
+  end
+
+  it 'actual?' do
     Location.delete_all
 
     location = Location.create(:title => "ukraine")
 
-    location.actuale?.should == false
-    location.actuale?("experiences").should == false
+    location.actual?.should == false
+    location.actual?(false).should == false
 
     Experience.create( :title => 'test', :location => location )
 
-    location.actuale?.should == true
-    location.actuale?("experiences").should == false
-    location.actuale?(:experiences).should == false
-    location.actuale?("Experience").should == false
-    location.actuale?("Experience").should == false
+    location.actual?.should == false
+    location.actual?(false).should == true
 
     Experience.create( :title => 'test', :location => location )
 
-    location.actuale?.should == true
-    location.actuale?("experiences").should == true
-    location.actuale?(:experiences).should == true
-  end 
+    location.actual?.should == true
+    location.actual?(false).should == true
+  end
 
   it 'compare' do
     Location.compare.should == :title

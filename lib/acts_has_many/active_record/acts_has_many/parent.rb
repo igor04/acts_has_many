@@ -1,35 +1,24 @@
 module ActiveRecord
   module ActsHasMany
 
-    #
-    # Add class methods:
-    #   +<relation>_attributes=+
-    #   or
-    #   +<relation>_collection=+
-    #
-
+    # Class methods:
+    #   <tt><relation>_attributes=</tt>
+    #   <tt><relation>_collection=</tt>
     module Parent
 
       def self.included base
 
-        #
         # Generate class methods
-        #   +<relation>_attributes=+ - set one element (use with belogns_to)
-        #   options:
-        #     data (type: Hash, existing recod, NilClass)
+        #   <tt><relation>_attributes=</tt> - set one element (use with belogns_to)
+        #   options: data (type: Hash, existing recod, NilClass)
         #
         #   Create or update child record and set to parent when `data` is Hash
         #   Change data with delating or leaving child record when `data` is exists record, or NilClass
         #
-        # =>------------------------------------------------------------------
-        #
-        #   +<relation>_collection=+ - set many elements (use with has_many :through)
-        #   options:
-        #     data (type: Array with (exist records or Hash)
+        #   <tt><relation>_collection=</tt> - set many elements (use with has_many :through)
+        #   options: data (type: Array with (exist records or Hash)
         #
         #   Create or select exists records and set to parent, unused record try destory
-        #
-
         base.dependent_relations.each do |relation|
           unless base.reflect_on_association relation.to_sym
             raise ArgumentError, "No association found for name `#{relation}`. Has it been defined yet?"
@@ -37,16 +26,16 @@ module ActiveRecord
 
           relation = relation.to_s
           unless base.reflect_on_association(relation.to_sym).collection?
-            base.class_eval <<-EOV, __FILE__ , __LINE__
+            base.class_eval <<-EOV, __FILE__ , __LINE__ + 1
             def #{relation}_attributes= data
               self.tmp_garbage ||= {}
               current = self.#{relation}
 
               if data.is_a? Hash
                 if current
-                  new, del = current.has_many_update data, '#{base.name.tableize}'
+                  new, del = current.has_many_update data
                 else
-                  new, del = #{relation.classify}.new.has_many_update data, '#{base.name.tableize}'
+                  new, del = #{relation.classify}.new.has_many_update data
                 end
 
                 self.#{relation} = new
@@ -58,13 +47,13 @@ module ActiveRecord
             end
             EOV
           else
-            base.class_eval <<-EOV, __FILE__ , __LINE__
+            base.class_eval <<-EOV, __FILE__ , __LINE__ + 1
             def #{relation}_collection= data
               self.tmp_garbage ||= {}
 
               if data.is_a? Array
                 if data.first.is_a? Hash
-                  new, del = #{relation.classify}.has_many_through_update new: data, relation: '#{base.name.tableize}'
+                  new, del = #{relation.classify}.has_many_through_update new: data
                 elsif data.first.is_a? #{relation.classify}
                   new, del = data, []
                 elsif data.empty?
@@ -87,10 +76,7 @@ module ActiveRecord
 
     private
 
-      #
-      #  +clear_garbage+ work with after_save and try destroied records from tmp_garbage
-      #
-
+      #  <tt>clear_garbage</tt> work with after_save and try destroied records from tmp_garbage
       def clear_garbage
         self.tmp_garbage.each do |relation, record|
           if record.is_a? Array
