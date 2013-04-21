@@ -12,7 +12,7 @@ Add this line to your application's Gemfile:
 
 And then execute:
 
-    $ bundle
+    $ bundle install
 
 Or install it yourself as:
 
@@ -25,46 +25,46 @@ Or install it yourself as:
 
 4. If only `acts_has_many` is used:
 ```ruby
-    class User < ActiveRecord::Base
-      belongs_to :company, dependent: :destroy
+    class Posting < ActiveRecord::Base
+      belongs_to :tag, dependent: :destroy
     end
 
-    class Company < ActiveRecord::Base
-      has_many :users
+    class Tag < ActiveRecord::Base
+      has_many :postings
 
-      acts_has_many :users
+      acts_has_many :postings
     end
 ```
     In this case you have `has_many_update` method:
 ```ruby
-    Company.first.has_many_update {title: 'Google'}
+    new_record, delete_record =  Tag.first.has_many_update {title: 'ruby'}
 ```
-    if you use `acts_has_many` with `through: true` paramters:
+    if you use `acts_has_many` with `through: true` parameters:
 ```ruby
-    new_records, delete_ids = Company.has_many_through_update(update: data, new: date)
+    new_records, delete_ids = Tag.has_many_through_update(update: data, new: date)
 ```
 
 5. If you use `acts_has_many` with `acts_has_many_for`
 ```ruby
-    class User < ActiveRecord::Base
-      belongs_to :company, dependent: :destroy
+    class Posting < ActiveRecord::Base
+      belongs_to :tag, dependent: :destroy
 
-      acts_has_many_for :company
+      acts_has_many_for :tag
     end
 
-    class Company < ActiveRecord::Base
-      has_many :users
+    class Tag < ActiveRecord::Base
+      has_many :postings
 
-      acts_has_many :users
+      acts_has_many :postings
     end
 ```
     In this case you can use the same that is in 4-th point and also:
 ```ruby
-    User.first.company_attributes = {title: 'Google'}
+    Posting.first.tag_attributes = {title: 'ruby'}
 ```
-    if you use `acts_has_many` with `through: true` paramters
+    if you use `acts_has_many` with `through: true` parameters
 ```ruby
-    User.first.companies_collection = [{title: 'Google'}, {title: 'Apple'}]
+    Posting.first.tags_collection = [{title: 'ruby'}, {title: 'python'}]
 ```
 
 More
@@ -90,12 +90,98 @@ More
   `<relation>_collection` options:
   >* data - Array (Records, Hash, Empty)
 
-  additionl
+  Additional
   >* `depend_relations` - show depend relations(Array)
   >* `actual?`  - check actuality(Boolean)
   >* `compare`  - return compare column(String)
   >* `destroy!` - standart destroy
   >* `destroy`  - destroy with cheking actuality record
+
+Examples
+--------
+Use with `has_manay`:
+```ruby
+  class Posting < ActiveRecord::Base
+    belongs_to :tag, dependent: :destroy
+
+    acts_has_many_for :tag
+  end
+
+  class Tag < ActiveRecord::Base
+    has_many :postings
+
+    acts_has_many :postings, compare: :name
+  end
+
+  posting = Posting.create title: 'First posting',
+                           tag_attributes: {name: 'ruby'}
+
+  posting.tag # => #<Tag id: 1, title: "ruby">
+  Tag.all # => [#<Tag id: 1, title: "ruby">]
+
+  posting = Posting.create title: 'Second posting',
+                           tag_attributes: {name: 'ruby'}
+
+  posting.tag # => #<Tag id: 1, title: "ruby">
+  Tag.all # => [#<Tag id: 1, title: "ruby">]
+
+  posting.update_attributes tag_attributes: {name: 'python'}
+
+  posting.tag # => #<Tag id: 2, title: "python">
+  Tag.all # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
+
+  posting.tag_attributes = Tag.first
+  posting.save
+
+  Tag.all # => [#<Tag id: 1, title: "ruby">]
+```
+Use with `has_many :through`
+```ruby
+  class Posting < ActiveRecord::Base
+    has_many :posting_tags, dependent: :destroy
+    has_many :tags, through: :posting_tags
+
+    acts_has_many_for :tags
+  end
+
+  class PostingTag < ActiveRecord::Base
+    belongs_to :posting
+    belongs_to :tag
+  end
+
+  class Tag < ActiveRecord::Base
+    has_many :postings, through: :posting_tags
+    has_many :posting_tags
+
+    acts_has_many :postings, through: true
+  end
+
+  posting = Posting.create title: 'First posting',
+                           tags_collection: [{name: 'ruby'}, {name: 'python'}]
+
+  posting.tags
+  # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
+  Tag.all
+  # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
+
+  posting = Posting.create title: 'Second posting',
+                           tags_collection: [{name: 'ruby'}, {name: 'java'}]
+
+  posting.tags
+  # => [#<Tag id: 1, title: "ruby">, #<Tag id: 3, title: "java">]
+  Tag.all
+  # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">, #<Tag id: 3, title: "java">]
+
+  posting.update_attributes tags_collection: [Tag.first]
+
+  posting.tags # => [#<Tag id: 2, title: "ruby">]
+  Tag.all
+  # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
+
+  Posting.first.destroy
+
+  Tag.all # => [#<Tag id: 1, title: "ruby">]
+```
 
 Contributing
 ------------

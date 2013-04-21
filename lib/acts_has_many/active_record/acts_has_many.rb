@@ -18,6 +18,8 @@ module ActiveRecord
       # Instance mothods:
       #   <tt>actual?</tt>
       #   <tt>has_many_update</tt>
+      #   <tt>destroy</tt>
+      #   <tt>destroy!</tt>
       # Set:
       #   validates for <compare_element> (uniqueness: true, presence: true)
       def acts_has_many *opt
