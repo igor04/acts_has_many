@@ -1,32 +1,17 @@
 module ActiveRecord
   module ActsHasMany
-
-    # Class methods:
-    #   <tt><relation>_attributes=</tt>
-    #   <tt><relation>_collection=</tt>
     module Parent
+      extend ActiveSupport::Concern
 
-      def self.included base
-
-        # Generate class methods
-        #   <tt><relation>_attributes=</tt> - set one element (use with belogns_to)
-        #   options: data (type: Hash, existing recod, NilClass)
-        #
-        #   Create or update child record and set to parent when `data` is Hash
-        #   Change data with delating or leaving child record when `data` is exists record, or NilClass
-        #
-        #   <tt><relation>_collection=</tt> - set many elements (use with has_many :through)
-        #   options: data (type: Array with (exist records or Hash)
-        #
-        #   Create or select exists records and set to parent, unused record try destory
-        base.dependent_relations.each do |relation|
-          unless base.reflect_on_association relation.to_sym
+      included  do
+        dependent_relations.each do |relation|
+          unless reflect_on_association relation.to_sym
             raise ArgumentError, "No association found for name `#{relation}`. Has it been defined yet?"
           end
 
           relation = relation.to_s
-          unless base.reflect_on_association(relation.to_sym).collection?
-            base.class_eval <<-EOV, __FILE__ , __LINE__ + 1
+          unless reflect_on_association(relation.to_sym).collection?
+            class_eval <<-EOV, __FILE__ , __LINE__ + 1
             def #{relation}_attributes= data
               self.tmp_garbage ||= {}
               current = self.#{relation}
@@ -47,7 +32,7 @@ module ActiveRecord
             end
             EOV
           else
-            base.class_eval <<-EOV, __FILE__ , __LINE__ + 1
+            class_eval <<-EOV, __FILE__ , __LINE__ + 1
             def #{relation}_collection= data
               self.tmp_garbage ||= {}
 
@@ -76,7 +61,6 @@ module ActiveRecord
 
     private
 
-      #  <tt>clear_garbage</tt> work with after_save and try destroied records from tmp_garbage
       def clear_garbage
         self.tmp_garbage.each do |relation, record|
           if record.is_a? Array
