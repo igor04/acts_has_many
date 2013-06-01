@@ -1,106 +1,96 @@
 require 'helper'
+require 'has_many_through_common'
 
-class Local < ActiveRecord::Base
-  self.table_name = 'locals'
-  has_many :companies, :through => :company_locals
-  has_many :company_locals
+describe "acts_has_many :through" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
 
-  acts_has_many :companies, :through => true, compare: 'title'
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
+
+      acts_has_many through: true
+    end
+  end
+  it_behaves_like 'acts_has_many through: true'
 end
 
-describe 'acts_has_many with :through' do
-  it 'parent.child_colletion=<data>' do
-    Local.delete_all
+describe "acts_has_many :through with relation" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
 
-    company = Company.create title: 'test', locals_collection: [{title: 'testx'}]
-    company.locals.first.title.should eq 'testx'
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
 
-    company.locals_collection = [{title: 'test2'}]
-    company.locals.first.title.should eq 'test2'
-    Local.all.size.should be 2
-
-    company.save # after save we clear garbage
-    company.locals.first.title.should eq 'test2'
-    Local.all.size.should be 1
-
-    company2 = Company.create title: 'test2', locals_collection: [{title: 'test2'},{title: 'test1'}]
-    company.locals_collection = Local.all
-    company.locals.size.should be 2
-
-    company.save
-    Local.all.size.should be 2
-
-    company.locals_collection = [{title: 'test3'}, {title: 'test2'}]
-    company.save
-
-    company.locals.size.should be 2
-    Local.all.size.should be 3
-
-    company.locals_collection = [{title: 'test1'}]
-    Local.all.size.should be 3
-
-    company.save
-    Local.all.size.should be 2
-
-    company2.locals_collection = [Local.last]
-    Local.all.size.should be 2
-
-    company2.save
-    Local.all.size.should be 1
-    company2.locals.should eq company.locals
-
-    company2.locals_collection = []
-    company2.save
-    company2.locals.should eq []
-
-    company.locals_collection = []
-    company.save
-
-    Local.all.should eq []
+      acts_has_many :companies, through: true
+    end
   end
-  it 'update' do
-    Local.delete_all
+  it_behaves_like 'acts_has_many through: true'
+end
 
-    Local.all.size.should == 0
+describe "acts_has_many :through with  :compare" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
 
-    new_records, del_records = Local.has_many_through_update( :new => [
-      { title: 'test0'},
-      { title: 'test1'},
-      { title: 'test2'},
-      { title: 'test3'},
-      { title: 'test0'},
-    ])
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
 
-    expect(new_records.count).to be 4
-    expect(del_records).to eq []
-    expect(Local.all.size).to be 4
-
-    new_records_1, del_records_1 = Local.has_many_through_update(
-    :new => [
-      { title: 'test0'},
-      { 'title' => 'test1'}
-    ],
-    :update => {
-      new_records[2].id => {title: 'test2s'},
-      new_records[3].id.to_s => {'title' => 'test3s'}
-    })
-
-    expect(new_records_1.map(&:id).sort!).to eq new_records.map(&:id)
-    expect(Local.find(new_records[2].id).title).to eq 'test2s'
-    expect(Local.find(new_records[3].id).title).to eq 'test3s'
-    expect(Local.all.size).to be 4
-
-
-    new, del = Local.has_many_through_update(
-    :new => [
-      { title: 'test0'},
-      { title: 'test3s'}],
-    :update => {
-      new_records_1[2].id => {title: 'test2s'},
-      new_records_1[3].id => {title: ''}
-    })
-
-    expect(del.size).to be 1
-    expect(new.size).to be 3
+      acts_has_many compare: :title, through: true
+    end
   end
+  it_behaves_like 'acts_has_many through: true'
+end
+
+describe "acts_has_many :through with relation and :compare" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
+
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
+
+      acts_has_many :companies, compare: :title, through: true
+    end
+  end
+  it_behaves_like 'acts_has_many through: true'
+end
+
+describe "acts_has_many :through with relation and block" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
+
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
+
+      acts_has_many :companies, through: true do |local|
+        where arel_table[:title].eq local[:title]
+      end
+    end
+  end
+  it_behaves_like 'acts_has_many through: true'
+end
+
+describe "acts_has_many :through with relation and block" do
+  before(:each) do
+    Object.send :remove_const, :Local if defined? Local
+
+    class Local < ActiveRecord::Base
+      self.table_name = 'locals'
+      has_many :companies, :through => :company_locals
+      has_many :company_locals
+
+      acts_has_many through: true do |local|
+        where arel_table[:title].eq local[:title]
+      end
+    end
+  end
+  it_behaves_like 'acts_has_many through: true'
 end
