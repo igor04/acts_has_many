@@ -67,12 +67,32 @@ Or install it yourself as:
     Posting.first.tags_collection = [{title: 'ruby'}, {title: 'python'}]
 ```
 
+New in v0.3.2
+--------------
+Use `block` to change condition, default search is `where :compare => :value`
+```ruby
+  class Tag < ActiveRecord::Base
+    has_many :postings
+
+    acts_has_many :postings do |params|
+      where arel_table[:title].matches(params[:title])
+    end
+  end
+```
+Replace `compare` method to `condition`
+
+Notice, if block is defined:
+   >* `:compare` argument will be ignored
+   >* auto `validates :compare, uniqueness: true` is off
+
+
 More
 ----
    `acts_has_many` options:
    >* list relations or after necessary relations
    >* :compare( string or symbol; default: :title) - name column with unique elements in table
    >* :through( boolean; default: false) - if you use has_many :through
+   >* &block(should return ActiveRecord::Relation; default: `where compare: params[:compare]`) - change condition
 
    `acts_has_many_for` options:
    >* list necessary relations
@@ -93,7 +113,7 @@ More
   Additional
   >* `depend_relations` - show depend relations(Array)
   >* `actual?`  - check actuality(Boolean)
-  >* `compare`  - return compare column(String)
+  >* `condition` - call block(in: params, out: ActiveRecord::Relation)
   >* `destroy!` - standart destroy
   >* `destroy`  - destroy with cheking actuality record
 
@@ -193,7 +213,7 @@ Here are some ways *you* can contribute:
 * by suggesting new features
 * by writing or editing documentation
 * by writing specifications
-* by writing code (**no patch is too small**: fix typos, add comments, clean up inconsistent whitespace)
+* by writing code
 * by refactoring code
 * by closing [issues](https://github.com/igor04/acts_has_many/issues)
 * by reviewing patches
