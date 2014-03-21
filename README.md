@@ -24,7 +24,8 @@ Or install it yourself as:
 3. Should use `dependent: :destroy`
 
 4. If only `acts_has_many` is used:
-```ruby
+
+  ```ruby
     class Posting < ActiveRecord::Base
       belongs_to :tag, dependent: :destroy
     end
@@ -34,42 +35,53 @@ Or install it yourself as:
 
       acts_has_many :postings
     end
-```
-    In this case you have `has_many_update` method:
-```ruby
-    new_record, delete_record =  Tag.first.has_many_update {title: 'ruby'}
-```
-    if you use `acts_has_many` with `through: true` parameters:
-```ruby
-    new_records, delete_ids = Tag.has_many_through_update(update: data, new: date)
-```
+  ```
+
+  In this case you have `has_many_update` method:
+
+  ```ruby
+      new_record, delete_record =  Tag.first.has_many_update {title: 'ruby'}
+  ```
+
+  if you use `acts_has_many` with `through: true` parameters:
+
+  ```ruby
+      new_records, delete_ids = Tag.has_many_through_update(update: data, new: date)
+  ```
 
 5. If you use `acts_has_many` with `acts_has_many_for`
-```ruby
-    class Posting < ActiveRecord::Base
-      belongs_to :tag, dependent: :destroy
 
-      acts_has_many_for :tag
-    end
+  ```ruby
+      class Posting < ActiveRecord::Base
+        belongs_to :tag, dependent: :destroy
 
-    class Tag < ActiveRecord::Base
-      has_many :postings
+        acts_has_many_for :tag
+      end
 
-      acts_has_many :postings
-    end
-```
-    In this case you can use the same that is in 4-th point and also:
-```ruby
-    Posting.first.tag_attributes = {title: 'ruby'}
-```
-    if you use `acts_has_many` with `through: true` parameters
-```ruby
-    Posting.first.tags_collection = [{title: 'ruby'}, {title: 'python'}]
-```
+      class Tag < ActiveRecord::Base
+        has_many :postings
+
+        acts_has_many :postings
+      end
+  ```
+
+  In this case you can use the same that is in 4-th point and also:
+
+  ```ruby
+      Posting.first.tag_attributes = {title: 'ruby'}
+  ```
+
+  if you use `acts_has_many` with `through: true` parameters
+
+  ```ruby
+      Posting.first.tags_collection = [{title: 'ruby'}, {title: 'python'}]
+  ```
 
 New in v0.3.2
 --------------
+
 Use `block` to change condition, default search is `where :compare => :value`
+
 ```ruby
   class Tag < ActiveRecord::Base
     has_many :postings
@@ -79,6 +91,7 @@ Use `block` to change condition, default search is `where :compare => :value`
     end
   end
 ```
+
 Replace `compare` method to `condition`
 
 Notice, if block is defined:
@@ -88,6 +101,7 @@ Notice, if block is defined:
 
 More
 ----
+
    `acts_has_many` options:
    >* list relations or after necessary relations
    >* :compare( string or symbol; default: :title) - name column with unique elements in table
@@ -120,6 +134,7 @@ More
 Examples
 --------
 Use with `has_manay`:
+
 ```ruby
   class Posting < ActiveRecord::Base
     belongs_to :tag, dependent: :destroy
@@ -155,7 +170,9 @@ Use with `has_manay`:
 
   Tag.all # => [#<Tag id: 1, title: "ruby">]
 ```
+
 Use with `has_many :through`
+
 ```ruby
   class Posting < ActiveRecord::Base
     has_many :posting_tags, dependent: :destroy
@@ -205,6 +222,7 @@ Use with `has_many :through`
 
 Contributing
 ------------
+
 You can help improve this project.
 
 Here are some ways *you* can contribute:
@@ -221,6 +239,7 @@ Here are some ways *you* can contribute:
 
 Submitting an Issue
 -------------------
+
 We use the [GitHub issue tracker](https://github.com/igor04/acts_has_many/issues) to track bugs and
 features. Before submitting a bug report or feature request, check to make sure it hasn't already
 been submitted. You can indicate support for an existing issuse by voting it up. When submitting a
