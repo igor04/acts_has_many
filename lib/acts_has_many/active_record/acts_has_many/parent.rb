@@ -36,7 +36,7 @@ module ActiveRecord
             def #{relation}_collection= data
               self.tmp_garbage ||= {}
 
-              if data.is_a? Array
+              if data.is_a?(Array) || data.is_a?(ActiveRecord::Relation)
                 if data.first.is_a? Hash
                   new, del = #{relation.classify}.has_many_through_update new: data
                 elsif data.first.is_a? #{relation.classify}

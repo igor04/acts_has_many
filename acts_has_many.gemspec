@@ -18,10 +18,10 @@ Gem::Specification.new do |gem|
   gem.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   gem.require_paths = ['lib']
 
-  gem.add_development_dependency 'bundler'
-  gem.add_development_dependency 'rake'
-  gem.add_development_dependency 'rspec'
-  gem.add_development_dependency 'sqlite3'
-  gem.add_development_dependency 'activerecord'
+  gem.add_development_dependency 'bundler', '~> 1.5'
+  gem.add_development_dependency 'rake', '~> 10'
+  gem.add_development_dependency 'rspec', '~> 2.14'
+  gem.add_development_dependency 'sqlite3', '~> 1.3'
+  gem.add_development_dependency 'activerecord', '~> 3.2'
 end
 
