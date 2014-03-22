@@ -4,6 +4,8 @@ Acts_has_many gem gives functional for clean update elements `has_many` relation
 (additional is `has_many :trhough`). The aim is work with has_many relation without gerbage,
 every record must be used, othervise there will be no record.
 
+##### Сurrently does not support `ActiveRecord 4`
+
 ## Installation
 
 Add this line to your application's Gemfile:
