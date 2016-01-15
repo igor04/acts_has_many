@@ -23,7 +23,7 @@ shared_examples_for 'acts_has_many' do
       expect(location).not_to eq add_loc
       expect(del_loc).to be nil
 
-      experience.location = Location.find(add_loc)
+      experience.location = Location.find(add_loc.id)
       expect(experience.location.title).to eq "italy"
 
       add_loc, del_loc = experience.location.has_many_update({"title" => "ukraine"})
@@ -35,7 +35,7 @@ shared_examples_for 'acts_has_many' do
     it "parent.child_attributes= Hash" do
       experience = Experience.create location_attributes: {title: "ukraine"}, title: "test experience2"
 
-      Location.all.size.should be 1
+      expect(Location.all.size).to be 1
       experience.location.title.should eq "ukraine"
 
       Experience.create location_attributes: {title: "ukraine"}, title: "test experience2"

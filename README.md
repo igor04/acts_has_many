@@ -1,10 +1,8 @@
 # acts_has_many [![Build Status](https://travis-ci.org/igor04/acts_has_many.png?branch=master)](https://travis-ci.org/igor04/acts_has_many)
 
-Acts_has_many gem gives functional for clean update elements `has_many` relation
-(additional is `has_many :trhough`). The aim is work with has_many relation without gerbage,
-every record must be used, othervise there will be no record.
-
-##### Сurrently does not support `ActiveRecord 4`
+Acts_has_many gem gives functional for useing common resources with `has_many` relation
+or `has_many :trhough`. The aim is common using records with has_many relation without duplications
+and gerbage, every erecord will be used
 
 ## Installation
 
@@ -21,45 +19,9 @@ Or install it yourself as:
     $ gem install acts_has_many
 
 ## Usage
-1. To initialize gem you can use `acts_has_many` only, or `acts_has_many` with `acts_has_many_for` together
-2. In model where you set `acts_has_many` will work clearly (all records used, no duplications)
-3. Should use `dependent: :destroy`
-
-4. If only `acts_has_many` is used:
+1. To initialize gem you should add `acts_has_many` to your common resource model
 
   ```ruby
-    class Posting < ActiveRecord::Base
-      belongs_to :tag, dependent: :destroy
-    end
-
-    class Tag < ActiveRecord::Base
-      has_many :postings
-
-      acts_has_many :postings
-    end
-  ```
-
-  In this case you have `has_many_update` method:
-
-  ```ruby
-      new_record, delete_record =  Tag.first.has_many_update {title: 'ruby'}
-  ```
-
-  if you use `acts_has_many` with `through: true` parameters:
-
-  ```ruby
-      new_records, delete_ids = Tag.has_many_through_update(update: data, new: date)
-  ```
-
-5. If you use `acts_has_many` with `acts_has_many_for`
-
-  ```ruby
-      class Posting < ActiveRecord::Base
-        belongs_to :tag, dependent: :destroy
-
-        acts_has_many_for :tag
-      end
-
       class Tag < ActiveRecord::Base
         has_many :postings
 
@@ -67,13 +29,24 @@ Or install it yourself as:
       end
   ```
 
-  In this case you can use the same that is in 4-th point and also:
+2. And add `acts_has_many_for` to model which will use common resource like:
+
+
+  ```ruby
+      class Posting < ActiveRecord::Base
+        belongs_to :tag, dependent: :destroy
+
+        acts_has_many_for :tag
+      end
+  ```
+
+3. Then you could use new functionality
 
   ```ruby
       Posting.first.tag_attributes = {title: 'ruby'}
   ```
 
-  if you use `acts_has_many` with `through: true` parameters
+  in case with relation `has_many through` you could write next:
 
   ```ruby
       Posting.first.tags_collection = [{title: 'ruby'}, {title: 'python'}]
@@ -88,10 +61,7 @@ Use `block` to change condition, default search is `where :compare => :value`
   class Tag < ActiveRecord::Base
     has_many :postings
 
-    acts_has_many :postings do |params|
-      where arel_table[:title].matches(params[:title])
-    end
-  end
+    acts_has_many :postings   end
 ```
 
 Replace `compare` method to `condition`
@@ -104,27 +74,28 @@ Notice, if block is defined:
 More
 ----
 
-   `acts_has_many` options:
-   >* list relations or after necessary relations
-   >* :compare( string or symbol; default: :title) - name column with unique elements in table
-   >* :through( boolean; default: false) - if you use has_many :through
-   >* &block(should return ActiveRecord::Relation; default: `where compare: params[:compare]`) - change condition
+  `acts_has_many` options:
+  >* list relations or after necessary relations
+  >* :compare( string or symbol; default: :title) - name column with unique elements in table
+  >* :through( boolean; default: false) - if you use has_many :through
+  >* &block(should return ActiveRecord::Relation; by default :compare option is used)
+  >*   example: do |params| where arel_table[:title].matches(params[:title]) end
 
-   `acts_has_many_for` options:
-   >* list necessary relations
-
-  `has_many_update` options:
-   >*   data: data for update
-
-   `has_many_through_update` options:
-   >* :update - array data, data include :id record for update
-   >* :new    - array data for new record
+  `acts_has_many_for` options:
+  >* list necessary relations
 
   `<relation>_attributes` options:
   >* data - Hash (other data use standart way)
 
   `<relation>_collection` options:
   >* data - Array (Records, Hash, Empty)
+
+  `has_many_update` options:
+   >*   data: data for update
+
+  `has_many_through_update` options:
+  >* :update - array data, data include :id record for update
+  >* :new    - array data for new record
 
   Additional
   >* `depend_relations` - show depend relations(Array)
@@ -154,23 +125,26 @@ Use with `has_manay`:
                            tag_attributes: {name: 'ruby'}
 
   posting.tag # => #<Tag id: 1, title: "ruby">
-  Tag.all # => [#<Tag id: 1, title: "ruby">]
+  Tag.all     # => [#<Tag id: 1, title: "ruby">]
 
   posting = Posting.create title: 'Second posting',
                            tag_attributes: {name: 'ruby'}
 
+  #NO DUPLICATIONS
   posting.tag # => #<Tag id: 1, title: "ruby">
-  Tag.all # => [#<Tag id: 1, title: "ruby">]
+  Tag.all     # => [#<Tag id: 1, title: "ruby">]
 
   posting.update_attributes tag_attributes: {name: 'python'}
 
+  #COORRECT UPDATING
   posting.tag # => #<Tag id: 2, title: "python">
-  Tag.all # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
+  Tag.all     # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
 
   posting.tag_attributes = Tag.first
   posting.save
 
-  Tag.all # => [#<Tag id: 1, title: "ruby">]
+  #NO UNUSED RECORDS
+  Tag.all     # => [#<Tag id: 1, title: "ruby">]
 ```
 
 Use with `has_many :through`
@@ -213,13 +187,15 @@ Use with `has_many :through`
 
   posting.update_attributes tags_collection: [Tag.first]
 
-  posting.tags # => [#<Tag id: 2, title: "ruby">]
+  posting.tags
+  # => [#<Tag id: 2, title: "ruby">]
   Tag.all
   # => [#<Tag id: 1, title: "ruby">, #<Tag id: 2, title: "python">]
 
   Posting.first.destroy
 
-  Tag.all # => [#<Tag id: 1, title: "ruby">]
+  Tag.all
+  # => [#<Tag id: 1, title: "ruby">]
 ```
 
 Contributing

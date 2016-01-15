@@ -27,7 +27,7 @@ module ActiveRecord
       def actual? exclude = true
         actual = 0
         self.class.dependent_relations.each do |dependent_relation|
-          actual += self.send(dependent_relation).all.size
+          actual += self.send(dependent_relation).count
         end
 
         exclude ? actual > 1 : actual > 0
